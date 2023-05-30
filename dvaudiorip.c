@@ -59,7 +59,7 @@ void WriteWAV(int fd,unsigned long datalen)
 	write(fd,&r2,4);
 }
 
-static signed short audio[1620*2];
+static signed short audio[1900*2];
 static int audio_len=0;
 static int video_frames=0;
 
@@ -92,17 +92,17 @@ signed short bsw16(signed short x)
 	return (signed)((t >> 8) | (t << 8));
 }
 
-int dec_lastsample[2] = {0,0};
-int quants[8] = {16,12,-1,-1,-1,-1,-1,-1};
-int srates[4] = {48000,44100,32000,-1};
-int min_samples[4] = {1580,1452,1053,-1};
+signed short dec_lastsample[2] = {0,0};
+signed char quants[8] = {16,12,-1,-1,-1,-1,-1,-1};
+unsigned int srates[4] = {48000,44100,32000,-1};
+unsigned int min_samples[4] = {1580,1452,1053,-1};
 void DecodeAudio()
 {
 	unsigned char *blk;
 	int i,j,bn,N,ch,quant=-1,srate=-1;
 
 	audio_len = 1600;
-	for (i=0;i < 1620*2;i++)
+	for (i=0;i < 1900*2;i++)
 		audio[i] = 0x8000;
 
 	// how many samples?
@@ -127,8 +127,8 @@ void DecodeAudio()
 
 	// de-interleave and assemble
 	if (quant == 16) {
-		for (N=0;N < 1620;N++) {
-			int ds1,ds2,da,b,bn1,bn2;
+		for (N=0;N < audio_len;N++) {
+			unsigned int ds1,ds2,da,b,bn1,bn2;
 			signed short *ptr;
 
 			ds1 = ((N / 3) + ((N % 3) * 2)) % 5;
@@ -150,23 +150,23 @@ void DecodeAudio()
 		}
 	}
 	else if (quant == 12) {
-		static int dv_audio_unshuffle_60[5][9] = {
+		static unsigned char dv_audio_unshuffle_60[5][9] = {
 			{ 0, 15, 30, 10, 25, 40,  5, 20, 35 },
 			{ 3, 18, 33, 13, 28, 43,  8, 23, 38 },
 			{ 6, 21, 36,  1, 16, 31, 11, 26, 41 },
 			{ 9, 24, 39,  4, 19, 34, 14, 29, 44 },
 			{12, 27, 42,  7, 22, 37,  2, 17, 32 }};
 		unsigned char *blk;
-		int stride = 45;
-		int bp,i,i_base;
+		unsigned int stride = 45;
+		unsigned int bp,i,i_base;
 		unsigned char my,mz,l;
-		int ds,dif,ch;
+		unsigned int ds,dif,ch;
 
 		for (ch=0;ch < 1;ch++) {
 			for (ds=0;ds < 5;ds++) {
 				for (dif=0;dif < 9;dif++) {
-					int dsb = ds + (ch * 5);
-					int bn = (dsb * 150) + (dif << 4) + 6;
+					unsigned int dsb = ds + (ch * 5);
+					unsigned int bn = (dsb * 150) + (dif << 4) + 6;
 					signed short *aptr = audio + ch;
 
 					if (frame_blk[bn]) {
@@ -178,8 +178,8 @@ void DecodeAudio()
 							mz = blk[bp+1];
 							l  = blk[bp+2];
 
-							int y = (my << 4) | (l >> 4);
-							int z = (mz << 4) | (l & 0xF);
+							short int y = (my << 4) | (l >> 4);
+							short int z = (mz << 4) | (l & 0xF);
 							if (y > 2048) y -= 4096;
 							if (z > 2048) z -= 4096;
 
