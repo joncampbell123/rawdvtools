@@ -1,14 +1,15 @@
+#define _FILE_OFFSET_BITS 64
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-unsigned long long lseek64(int fd,unsigned long long x,int whence);
 
 typedef struct {
 	unsigned char		raw[80];
@@ -129,7 +130,7 @@ int writeframe()
 		
 		sprintf(name,"split-output-%04u-%s.dv",out_seq++,desc);
 		printf("writing to: %s\n",name);
-		out_fd = open64(name,O_WRONLY | O_TRUNC | O_CREAT | O_BINARY,0644);
+		out_fd = open(name,O_WRONLY | O_TRUNC | O_CREAT | O_BINARY,0644);
 		if (out_fd < 0) {
 			fprintf(stderr,"Unable to create %s\n",name);
 			return 0;
@@ -152,15 +153,15 @@ int main(int argc,char **argv)
 		return 1;
 	}
 
-/* a DV file is likely > 2GB so use open64 */
-	fd = open64(argv[1],O_RDONLY | O_BINARY);
+/* a DV file is likely > 2GB so use open */
+	fd = open(argv[1],O_RDONLY | O_BINARY);
 	if (fd < 0) {
 		fprintf(stderr,"Cannot open file for reading\n");
 		return 1;
 	}
 
 	/* blah blah blah */
-//	printf("Found DV header @ %Lu\n",lseek64(fd,0,SEEK_CUR) - ((unsigned long long)80));
+//	printf("Found DV header @ %Lu\n",lseek(fd,0,SEEK_CUR) - ((unsigned long long)80));
 //	printf("System: %s\n",(c->raw[3] >> 7) ? "625/50 PAL system" : "525/60 NTSC system");
 //	printf("Audio DIF blocks present:   %s\n",truefalse[(c->raw[3] >> 5) & 1]);
 //	printf("Video AUX blocks present:   %s\n",truefalse[(c->raw[3] >> 4) & 1]);

@@ -1,14 +1,15 @@
+#define _FILE_OFFSET_BITS 64
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-unsigned long long lseek64(int fd,unsigned long long x,int whence);
 
 typedef struct {
 	unsigned char		raw[80];
@@ -43,7 +44,7 @@ void WriteWAV(int fd,unsigned long datalen)
 	unsigned short w;
 	unsigned int d;
 
-	lseek64(fd,0,SEEK_SET);
+	lseek(fd,0,SEEK_SET);
 	write(fd,"RIFF",4);
 	write(fd,&r1,4);
 	write(fd,"WAVEfmt ",8);
@@ -259,7 +260,7 @@ int main(int argc,char **argv)
 		return 1;
 	}
 
-	ofd = open64(argv[argc-1],O_RDWR | O_TRUNC | O_CREAT,0644);
+	ofd = open(argv[argc-1],O_RDWR | O_TRUNC | O_CREAT,0644);
 	if (ofd < 0) {
 		fprintf(stderr,"Cannot create file\n");
 		return 1;
@@ -272,10 +273,10 @@ int main(int argc,char **argv)
 
 	/* cool. now scan the stream for other header blocks and pick out time codes */
 	for (pass=1;pass < argc-1;pass++) {
-		fd = open64(argv[pass],O_RDONLY | O_BINARY);
+		fd = open(argv[pass],O_RDONLY | O_BINARY);
 		if (fd < 0) continue;
 
-		lseek64(fd,0,SEEK_SET);
+		lseek(fd,0,SEEK_SET);
 		while (read(fd,cur_frame,12000*10) > 0) {
 			audio_len = 1600;
 			memset(frame_blk,0,sizeof(frame_blk));
@@ -339,7 +340,7 @@ int main(int argc,char **argv)
 		close(fd);
 	}
 
-	unsigned long final_len = lseek64(ofd,0,SEEK_END);
+	unsigned long final_len = lseek(ofd,0,SEEK_END);
 	WriteWAV(ofd,final_len - 44);
 	close(ofd);
 	close(fd);

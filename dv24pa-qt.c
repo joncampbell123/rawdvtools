@@ -1,3 +1,5 @@
+#define _FILE_OFFSET_BITS 64
+
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,8 +22,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-unsigned long long lseek64(int fd,unsigned long long x,int whence);
 
 typedef struct {
 	unsigned char		raw[80];
@@ -98,7 +98,7 @@ void qt_write_atom(int fd,char *atom,unsigned long size) {
 }
 
 static unsigned long long current(int fd) {
-	return lseek64(fd,0,SEEK_CUR);
+	return lseek(fd,0,SEEK_CUR);
 }
 
 int main(int argc,char **argv)
@@ -166,7 +166,7 @@ int main(int argc,char **argv)
 	memset(frame_blk,0,150*10);
 
 	/* open output */
-	int mov_fd = open64(outfile,O_RDWR|O_CREAT|O_TRUNC);
+	int mov_fd = open(outfile,O_RDWR|O_CREAT|O_TRUNC);
 	if (mov_fd < 0) {
 		fprintf(stderr,"Cannot open output file\n");
 		return 1;
@@ -174,10 +174,10 @@ int main(int argc,char **argv)
 
 	/* cool. now scan the stream for other header blocks and pick out time codes */
 	{
-		fd = open64(dvfile,O_RDONLY | O_BINARY);
+		fd = open(dvfile,O_RDONLY | O_BINARY);
 		if (fd < 0) return 1;
 
-		unsigned long long file_size = lseek64(fd,0,SEEK_END);
+		unsigned long long file_size = lseek(fd,0,SEEK_END);
 		offset = 0;
 
 		time_t began = time(NULL);
@@ -185,7 +185,7 @@ int main(int argc,char **argv)
 			// ugh okay so this is a cheap way to do it, but... it works
 			// note that tracking is used here for those rare
 			// weird cases where dvgrab gets things misaligned
-			if (lseek64(fd,offset+(tracking*12000),SEEK_SET) != (offset+(tracking*12000)))
+			if (lseek(fd,offset+(tracking*12000),SEEK_SET) != (offset+(tracking*12000)))
 				break;
 			if (read(fd,cur_frame,12000*10) < 12000)
 				break;

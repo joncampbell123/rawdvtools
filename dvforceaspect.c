@@ -1,5 +1,8 @@
+#define _FILE_OFFSET_BITS 64
+
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -7,8 +10,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
-unsigned long long lseek64(int fd,unsigned long long x,int whence);
 
 typedef struct {
 	unsigned char		raw[80];
@@ -46,14 +47,13 @@ int main(int argc,char **argv)
 		return 1;
 	}
 
-/* a DV file is likely > 2GB so use open64 */
-	fd = open64(argv[1],O_RDONLY | O_BINARY);
+	fd = open(argv[1],O_RDONLY | O_BINARY);
 	if (fd < 0) {
 		fprintf(stderr,"Cannot open file for reading\n");
 		return 1;
 	}
 
-	ofd = open64(argv[2],O_WRONLY | O_TRUNC | O_CREAT,0644);
+	ofd = open(argv[2],O_WRONLY | O_TRUNC | O_CREAT,0644);
 	if (ofd < 0) {
 		fprintf(stderr,"Cannot create file\n");
 		return 1;
@@ -69,22 +69,16 @@ int main(int argc,char **argv)
 		aspect_code == 2 ? "16:9" : "4:3");
 
 	/* cool. now scan the stream for other header blocks and pick out time codes */
-	lseek64(fd,0,SEEK_SET);
+	lseek(fd,0,SEEK_SET);
 	while (read(fd,frame,12000*10) > 0) {
 		unsigned char *VAUX[3];
 		VAUX[0] = VAUX[1] = VAUX[2] = NULL;
-		unsigned char *first_empty = NULL;
 		unsigned char *VAUXSC = NULL;
 		unsigned char *VAUXSC_empty = NULL;
-		int first_empty_N = 0;
 
 		for (asx=0;asx < (150*10);asx++) {
 			DIFchunk *c = PickDIF(frame + (asx * 80));
 			if (!c) continue;
-
-			if (c->raw[0] == 0 && c->raw[1] == 0 && c->raw[2] == 0 && first_empty == NULL)
-				if (first_empty_N < 3)
-					first_empty[first_empty_N++] = frame + (asx * 80);
 
 			/* we concern ourselves with the VAUX packets */
 			if (c->SCT == 2) {
